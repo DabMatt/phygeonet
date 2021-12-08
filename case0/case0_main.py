@@ -11,11 +11,11 @@ import time
 from scipy.interpolate import interp1d
 import tikzplotlib
 sys.path.insert(0, '../source')
-from dataset import VaryGeoDataset
-from pyMesh import hcubeMesh, visualize2D, plotBC, plotMesh,setAxisLabel,\
+from source.dataset import VaryGeoDataset
+from source.pyMesh import hcubeMesh, visualize2D, plotBC, plotMesh,setAxisLabel,\
                    np2cuda,to4DTensor
-from model import USCNN
-from readOF import convertOFMeshToImage,convertOFMeshToImage_StructuredMesh
+from source.model import USCNN
+from source.readOF import convertOFMeshToImage,convertOFMeshToImage_StructuredMesh
 from sklearn.metrics import mean_squared_error as calMSE
 import Ofpp
 h=0.01

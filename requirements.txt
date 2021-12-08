@@ -1,0 +1,8 @@
+numpy
+matplotlib
+scipy
+tikzplotlib
+dataset
+pyMesh
+sklearn
+Ofpp

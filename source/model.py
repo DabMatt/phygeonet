@@ -15,6 +15,7 @@ class USCNN(nn.Module):
 		self.nVarOut=nVarOut
 		self.k=k
 		self.s=1
+
 		self.p=2
 		self.deltaX=h
 		self.nx=nx
