@@ -4,7 +4,6 @@ import torch.nn.init as init
 import torch.nn.functional as F
 import pdb
 torch.manual_seed(123)
-
 class USCNN(nn.Module):
 	def __init__(self,h,nx,ny,nVarIn=1,nVarOut=1,initWay=None,k=5,s=1,p=2):
 		super(USCNN, self).__init__()
@@ -40,7 +39,7 @@ class USCNN(nn.Module):
 								 [0.,  0.,  0.,  0.,  0.],
 								 [1., -8.,  0.,  8.,  -1.],
 								 [0.,  0.,  0.,  0.,  0.],
-								 [0.,  0.,  0.,  0.,  0.]]]])/12./self.deltaX #.to("cuda")
+								 [0.,  0.,  0.,  0.,  0.]]]]).to("cuda")/12./self.deltaX
 		self.convdx=nn.Conv2d(1, 1, (5,5),stride=1, padding=0, bias=None)
 		self.convdx.weight=nn.Parameter(dxFilter, requires_grad=False)
 
@@ -48,7 +47,7 @@ class USCNN(nn.Module):
 								 [0.,  0.,  -8.,  0.,  0.],
 								 [0.,  0.,  0.,  0.,  0.],
 								 [0.,  0.,  8., 0.,  0.],
-								 [0.,  0.,  -1.,  0.,  0.]]]])/12./self.deltaX #.to("cuda")
+								 [0.,  0.,  -1.,  0.,  0.]]]]).to("cuda")/12./self.deltaX
 		self.convdy=nn.Conv2d(1,1,(5,5),stride=1,padding=0,bias=None)
 		self.convdy.weight=nn.Parameter(dyFilter,requires_grad=False)
 
@@ -56,7 +55,7 @@ class USCNN(nn.Module):
 								  [0.,  0.,  16.,  0.,   0.],
 								  [-1., 16., -60., 16., -1.],
 								  [0.,  0.,  16.,  0.,   0.],
-								  [0.,  0.,  -1.,  0.,   0.]]]])/12./self.deltaX/self.deltaX #.to("cuda")
+								  [0.,  0.,  -1.,  0.,   0.]]]]).to("cuda")/12./self.deltaX/self.deltaX
 		self.convlap = nn.Conv2d(1, 1, (5,5),stride=1, padding=0, bias=None)
 		self.convlap.weight=nn.Parameter(lapFilter, requires_grad=False)
 
@@ -129,7 +128,7 @@ class USCNNSep(nn.Module):
 								 [0.,  0.,  0.,  0.,  0.],
 								 [1., -8.,  0.,  8.,  -1.],
 								 [0.,  0.,  0.,  0.,  0.],
-								 [0.,  0.,  0.,  0.,  0.]]]])/12./self.deltaX #.to("cuda")
+								 [0.,  0.,  0.,  0.,  0.]]]]).to("cuda")/12./self.deltaX
 		self.convdxi=nn.Conv2d(1, 1, (5,5),stride=1, padding=0, bias=None)
 		self.convdxi.weight=nn.Parameter(dxiFilter, requires_grad=False)
 
@@ -137,7 +136,7 @@ class USCNNSep(nn.Module):
 								 [0.,  0.,  -8.,  0.,  0.],
 								 [0.,  0.,  0.,  0.,  0.],
 								 [0.,  0.,  8., 0.,  0.],
-								 [0.,  0.,  -1.,  0.,  0.]]]])/12./self.deltaX #.to("cuda")
+								 [0.,  0.,  -1.,  0.,  0.]]]]).to("cuda")/12./self.deltaX
 		self.convdeta=nn.Conv2d(1,1,(5,5),stride=1,padding=0,bias=None)
 		self.convdeta.weight=nn.Parameter(detaFilter,requires_grad=False)
 
@@ -145,7 +144,7 @@ class USCNNSep(nn.Module):
 								  [0.,  0.,  16.,  0.,   0.],
 								  [-1., 16., -60., 16., -1.],
 								  [0.,  0.,  16.,  0.,   0.],
-								  [0.,  0.,  -1.,  0.,   0.]]]])/12./self.deltaX/self.deltaX #.to("cuda")
+								  [0.,  0.,  -1.,  0.,   0.]]]]).to("cuda")/12./self.deltaX/self.deltaX
 		self.convlap = nn.Conv2d(1, 1, (5,5),stride=1, padding=0, bias=None)
 		self.convlap.weight=nn.Parameter(lapFilter, requires_grad=False)
 
@@ -239,7 +238,7 @@ class USCNNSepPhi(nn.Module):
 								     [0.,  0.,  0.,  0.,  0.],
 								 	 [0.,  0.,  1.,  0.,  0.],
 								     [0.,  0.,  0.,  0.,  0.],
-								     [0.,  0.,  0.,  0.,  0.]]]])#.to("cuda")
+								     [0.,  0.,  0.,  0.,  0.]]]]).to("cuda")
 		self.convShrink=nn.Conv2d(1, 1, (5,5),stride=1, padding=0, bias=None)
 		self.convShrink.weight=nn.Parameter(shrinkFilter, requires_grad=False)
 
@@ -248,7 +247,7 @@ class USCNNSepPhi(nn.Module):
 								 [0.,  0.,  0.,  0.,  0.],
 								 [1., -8.,  0.,  8.,  -1.],
 								 [0.,  0.,  0.,  0.,  0.],
-								 [0.,  0.,  0.,  0.,  0.]]]])/12./self.deltaX #.to("cuda")
+								 [0.,  0.,  0.,  0.,  0.]]]]).to("cuda")/12./self.deltaX
 		self.convdx=nn.Conv2d(1, 1, (5,5),stride=1, padding=0, bias=None)
 		self.convdx.weight=nn.Parameter(dxFilter, requires_grad=False)
 
@@ -256,7 +255,7 @@ class USCNNSepPhi(nn.Module):
 								 [0.,  0.,  -8.,  0.,  0.],
 								 [0.,  0.,  0.,  0.,  0.],
 								 [0.,  0.,  8., 0.,  0.],
-								 [0.,  0.,  -1.,  0.,  0.]]]])/12./self.deltaX #.to("cuda")
+								 [0.,  0.,  -1.,  0.,  0.]]]]).to("cuda")/12./self.deltaX
 		self.convdy=nn.Conv2d(1,1,(5,5),stride=1,padding=0,bias=None)
 		self.convdy.weight=nn.Parameter(dyFilter,requires_grad=False)
 
@@ -264,7 +263,7 @@ class USCNNSepPhi(nn.Module):
 								  [0.,  0.,  16.,  0.,   0.],
 								  [-1., 16., -60., 16., -1.],
 								  [0.,  0.,  16.,  0.,   0.],
-								  [0.,  0.,  -1.,  0.,   0.]]]])/12./self.deltaX/self.deltaX #.to("cuda")
+								  [0.,  0.,  -1.,  0.,   0.]]]]).to("cuda")/12./self.deltaX/self.deltaX
 		self.convlap = nn.Conv2d(1, 1, (5,5),stride=1, padding=0, bias=None)
 		self.convlap.weight=nn.Parameter(lapFilter, requires_grad=False)
 
@@ -317,7 +316,7 @@ def flatchannel(outputSize,nVarIn,nVarOut,W1,W2,k,s,p):
 			       				 nn.Conv2d(W2,W1,kernel_size=k, stride=s, padding=p),
 			       				 nn.ReLU(),
 			       				 nn.Conv2d(W1,nVarOut,kernel_size=k, stride=s, padding=p),
-			       				 nn.PixelShuffle(1)) #.to('cuda')
+			       				 nn.PixelShuffle(1)).to('cuda')
 
 
 class DDBasic(nn.Module):
@@ -353,7 +352,7 @@ class DDBasic(nn.Module):
 								     [0.,  0.,  0.,  0.,  0.],
 								 	 [0.,  0.,  1.,  0.,  0.],
 								     [0.,  0.,  0.,  0.,  0.],
-								     [0.,  0.,  0.,  0.,  0.]]]]) #.to("cuda")
+								     [0.,  0.,  0.,  0.,  0.]]]]).to("cuda")
 		self.convShrink=nn.Conv2d(1, 1, (5,5),stride=1, padding=0, bias=None)
 		self.convShrink.weight=nn.Parameter(shrinkFilter, requires_grad=False)
 
@@ -362,7 +361,7 @@ class DDBasic(nn.Module):
 								 [0.,  0.,  0.,  0.,  0.],
 								 [1., -8.,  0.,  8.,  -1.],
 								 [0.,  0.,  0.,  0.,  0.],
-								 [0.,  0.,  0.,  0.,  0.]]]])/12./self.deltaX #.to("cuda")
+								 [0.,  0.,  0.,  0.,  0.]]]]).to("cuda")/12./self.deltaX
 		self.convdx=nn.Conv2d(1, 1, (5,5),stride=1, padding=0, bias=None)
 		self.convdx.weight=nn.Parameter(dxFilter, requires_grad=False)
 
@@ -370,7 +369,7 @@ class DDBasic(nn.Module):
 								 [0.,  0.,  -8.,  0.,  0.],
 								 [0.,  0.,  0.,  0.,  0.],
 								 [0.,  0.,  8., 0.,  0.],
-								 [0.,  0.,  -1.,  0.,  0.]]]])/12./self.deltaX #.to("cuda")
+								 [0.,  0.,  -1.,  0.,  0.]]]]).to("cuda")/12./self.deltaX
 		self.convdy=nn.Conv2d(1,1,(5,5),stride=1,padding=0,bias=None)
 		self.convdy.weight=nn.Parameter(dyFilter,requires_grad=False)
 
@@ -378,7 +377,7 @@ class DDBasic(nn.Module):
 								  [0.,  0.,  16.,  0.,   0.],
 								  [-1., 16., -60., 16., -1.],
 								  [0.,  0.,  16.,  0.,   0.],
-								  [0.,  0.,  -1.,  0.,   0.]]]])/12./self.deltaX/self.deltaX #.to("cuda")
+								  [0.,  0.,  -1.,  0.,   0.]]]]).to("cuda")/12./self.deltaX/self.deltaX
 		self.convlap = nn.Conv2d(1, 1, (5,5),stride=1, padding=0, bias=None)
 		self.convlap.weight=nn.Parameter(lapFilter, requires_grad=False)
 
@@ -454,7 +453,7 @@ class DDBasicSepNoPhi(nn.Module):
 								     [0.,  0.,  0.,  0.,  0.],
 								 	 [0.,  0.,  1.,  0.,  0.],
 								     [0.,  0.,  0.,  0.,  0.],
-								     [0.,  0.,  0.,  0.,  0.]]]]) #.to("cuda")
+								     [0.,  0.,  0.,  0.,  0.]]]]).to("cuda")
 		self.convShrink=nn.Conv2d(1, 1, (5,5),stride=1, padding=0, bias=None)
 		self.convShrink.weight=nn.Parameter(shrinkFilter, requires_grad=False)
 
@@ -463,7 +462,7 @@ class DDBasicSepNoPhi(nn.Module):
 								 [0.,  0.,  0.,  0.,  0.],
 								 [1., -8.,  0.,  8.,  -1.],
 								 [0.,  0.,  0.,  0.,  0.],
-								 [0.,  0.,  0.,  0.,  0.]]]])/12./self.deltaX #.to("cuda")
+								 [0.,  0.,  0.,  0.,  0.]]]]).to("cuda")/12./self.deltaX
 		self.convdx=nn.Conv2d(1, 1, (5,5),stride=1, padding=0, bias=None)
 		self.convdx.weight=nn.Parameter(dxFilter, requires_grad=False)
 
@@ -471,7 +470,7 @@ class DDBasicSepNoPhi(nn.Module):
 								 [0.,  0.,  -8.,  0.,  0.],
 								 [0.,  0.,  0.,  0.,  0.],
 								 [0.,  0.,  8., 0.,  0.],
-								 [0.,  0.,  -1.,  0.,  0.]]]])/12./self.deltaX #.to("cuda")
+								 [0.,  0.,  -1.,  0.,  0.]]]]).to("cuda")/12./self.deltaX
 		self.convdy=nn.Conv2d(1,1,(5,5),stride=1,padding=0,bias=None)
 		self.convdy.weight=nn.Parameter(dyFilter,requires_grad=False)
 
@@ -479,15 +478,15 @@ class DDBasicSepNoPhi(nn.Module):
 								  [0.,  0.,  16.,  0.,   0.],
 								  [-1., 16., -60., 16., -1.],
 								  [0.,  0.,  16.,  0.,   0.],
-								  [0.,  0.,  -1.,  0.,   0.]]]])/12./self.deltaX/self.deltaX #.to("cuda")
+								  [0.,  0.,  -1.,  0.,   0.]]]]).to("cuda")/12./self.deltaX/self.deltaX
 		self.convlap = nn.Conv2d(1, 1, (5,5),stride=1, padding=0, bias=None)
 		self.convlap.weight=nn.Parameter(lapFilter, requires_grad=False)
 
 	def forward(self, x):
 		xup=self.US(x)
-		x1=torch.zeros(xup[:,0:1,:,:].shape) #.to('cuda')
-		x2=torch.zeros(xup[:,0:1,:,:].shape) #.to('cuda')
-		x3=torch.zeros(xup[:,0:1,:,:].shape) #.to('cuda')
+		x1=torch.zeros(xup[:,0:1,:,:].shape).to('cuda')
+		x2=torch.zeros(xup[:,0:1,:,:].shape).to('cuda')
+		x3=torch.zeros(xup[:,0:1,:,:].shape).to('cuda')
 		l=10
 		for i in range(5):
 			for j in range(5):
