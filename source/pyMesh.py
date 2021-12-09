@@ -36,8 +36,8 @@ def to4DTensor(myList):
 	MyList=[]
 	for item in myList:
 		if len(item.shape)==3:
-			item=torch.tensor(item.reshape([item.shape[0],1,item.shape[1],
-				              item.shape[2]]))
+			item=item.reshape([item.shape[0],1,item.shape[1],
+				              item.shape[2]]).clone().detach()
 			MyList.append(item.float().to(device))
 		else:
 			item=item.clone().detach()
