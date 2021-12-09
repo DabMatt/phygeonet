@@ -24,7 +24,7 @@ import torch
 def np2cuda(myList):
 	MyList=[]
 	for item in myList:
-		MyList.append(item.to('cuda'))
+		MyList.append(item) #.to('cuda')
 	return MyList
 
 def to4DTensor(myList):
@@ -33,10 +33,10 @@ def to4DTensor(myList):
 		if len(item.shape)==3:
 			item=torch.tensor(item.reshape([item.shape[0],1,item.shape[1],
 				              item.shape[2]]))
-			MyList.append(item.float().to('cuda'))
+			MyList.append(item.float()) #.to('cuda')
 		else:
 			item=torch.tensor(item)
-			MyList.append(item.float().to('cuda'))
+			MyList.append(item.float()) #.to('cuda')
 	return MyList
 def checkGeo(leftX,leftY,rightX,rightY,lowX,lowY,upX,upY,tolJoint):
 	print(arrow+'Check bc nodes!')
