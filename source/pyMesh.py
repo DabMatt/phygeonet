@@ -21,10 +21,15 @@ import matplotlib.pyplot as plt
 import pdb
 import torch
 
+if torch.cuda.is_available():
+  device = torch.device("cuda")
+else:
+  device = torch.device("cpu")
+
 def np2cuda(myList):
 	MyList=[]
 	for item in myList:
-		MyList.append(item.to('cuda'))
+		MyList.append(item.to(device))
 	return MyList
 
 def to4DTensor(myList):
@@ -33,10 +38,10 @@ def to4DTensor(myList):
 		if len(item.shape)==3:
 			item=torch.tensor(item.reshape([item.shape[0],1,item.shape[1],
 				              item.shape[2]]))
-			MyList.append(item.float().to('cuda'))
+			MyList.append(item.float().to(device))
 		else:
-			item=torch.tensor(item)
-			MyList.append(item.float().to('cuda'))
+			item=item.clone().detach()
+			MyList.append(item.float().to(device))
 	return MyList
 def checkGeo(leftX,leftY,rightX,rightY,lowX,lowY,upX,upY,tolJoint):
 	print(arrow+'Check bc nodes!')

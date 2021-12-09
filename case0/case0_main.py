@@ -12,12 +12,17 @@ from scipy.interpolate import interp1d
 import tikzplotlib
 sys.path.insert(0, '../source')
 from source.dataset import VaryGeoDataset
-from source.pyMesh import hcubeMesh, visualize2D, plotBC, plotMesh,setAxisLabel,\
-                   np2cuda,to4DTensor
+from source.pyMesh import hcubeMesh, visualize2D, plotBC, plotMesh,setAxisLabel,np2cuda,to4DTensor
 from source.model import USCNN
 from source.readOF import convertOFMeshToImage,convertOFMeshToImage_StructuredMesh
 from sklearn.metrics import mean_squared_error as calMSE
 import Ofpp
+
+if torch.cuda.is_available():
+  device = torch.device("cuda")
+else:
+  device = torch.device("cpu")
+
 h=0.01
 OFBCCoord=Ofpp.parse_boundary_field('TemplateCase/30/C')
 OFLOWC=OFBCCoord[b'low'][b'value']
@@ -39,7 +44,7 @@ nEpochs=1500
 lr=0.001
 Ns=1
 nu=0.01
-model=USCNN(h,nx,ny,NvarInput,NvarOutput).to('cuda')
+model=USCNN(h,nx,ny,NvarInput,NvarOutput).to(device)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(),lr=lr)
 padSingleSide=1
@@ -47,8 +52,8 @@ udfpad=nn.ConstantPad2d([padSingleSide,padSingleSide,padSingleSide,padSingleSide
 MeshList=[]
 MeshList.append(myMesh)
 train_set=VaryGeoDataset(MeshList)
-training_data_loader=DataLoader(dataset=train_set,
-	                            batch_size=batchSize)
+training_data_loader=DataLoader(dataset=train_set,batch_size=batchSize)
+
 OFPicInformative=convertOFMeshToImage_StructuredMesh(nx,ny,'TemplateCase/30/C',
 	                                           ['TemplateCase/30/T'],
 	                                            [0,1,0,1],0.0,False)
@@ -59,6 +64,7 @@ OFX=OFPic[:,:,0]
 OFY=OFPic[:,:,1]
 OFV=OFPic[:,:,2]
 OFV_sb=OFV
+
 def dfdx(f,dydeta,dydxi,Jinv):
 	dfdxi_internal=(-f[:,:,:,4:]+8*f[:,:,:,3:-1]-8*f[:,:,:,1:-3]+f[:,:,:,0:-4])/12/h 	
 	dfdxi_left=(-11*f[:,:,:,0:-3]+18*f[:,:,:,1:-2]-9*f[:,:,:,2:-1]+2*f[:,:,:,3:])/6/h
@@ -70,6 +76,7 @@ def dfdx(f,dydeta,dydxi,Jinv):
 	dfdeta=torch.cat((dfdeta_low[:,:,0:2,:],dfdeta_internal,dfdeta_up[:,:,-2:,:]),2)
 	dfdx=Jinv*(dfdxi*dydeta-dfdeta*dydxi)
 	return dfdx
+
 def dfdy(f,dxdxi,dxdeta,Jinv):
 	dfdxi_internal=(-f[:,:,:,4:]+8*f[:,:,:,3:-1]-8*f[:,:,:,1:-3]+f[:,:,:,0:-4])/12/h	
 	dfdxi_left=(-11*f[:,:,:,0:-3]+18*f[:,:,:,1:-2]-9*f[:,:,:,2:-1]+2*f[:,:,:,3:])/6/h
@@ -82,6 +89,7 @@ def dfdy(f,dxdxi,dxdeta,Jinv):
 	dfdeta=torch.cat((dfdeta_low[:,:,0:2,:],dfdeta_internal,dfdeta_up[:,:,-2:,:]),2)
 	dfdy=Jinv*(dfdeta*dxdxi-dfdxi*dxdeta)
 	return dfdy
+
 def train(epoch):
 	startTime=time.time()
 	xRes=0
@@ -141,6 +149,7 @@ def train(epoch):
 		fig1.savefig(str(epoch)+'T.pdf',bbox_inches='tight')
 		plt.close(fig1)		
 	return (mRes/len(training_data_loader)),(eV/len(training_data_loader))
+
 MRes=[]
 EV=[]
 TotalstartTime=time.time()
@@ -150,6 +159,7 @@ for epoch in range(1,nEpochs+1):
 	EV.append(ev)
 	if ev<0.1:
 		break
+
 TimeSpent=time.time()-TotalstartTime
 plt.figure()
 plt.plot(MRes,'-*',label='Equation Residual')
@@ -158,6 +168,7 @@ plt.ylabel('Residual')
 plt.legend()
 plt.yscale('log')
 plt.savefig('convergence.pdf',bbox_inches='tight')
+
 tikzplotlib.save('convergence.tikz')
 plt.figure()
 plt.plot(EV,'-x',label=r'$e_v$')
@@ -167,6 +178,7 @@ plt.legend()
 plt.yscale('log')
 plt.savefig('error.pdf',bbox_inches='tight')
 tikzplotlib.save('error.tikz')
+
 EV=np.asarray(EV)
 MRes=np.asarray(MRes)
 np.savetxt('EV.txt',EV)
