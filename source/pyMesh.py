@@ -43,6 +43,7 @@ def to4DTensor(myList):
 			item=item.clone().detach()
 			MyList.append(item.float().to(device))
 	return MyList
+
 def checkGeo(leftX,leftY,rightX,rightY,lowX,lowY,upX,upY,tolJoint):
 	print(arrow+'Check bc nodes!')
 	assert len(leftX.shape)==len(leftY.shape)==len(rightX.shape)==\
