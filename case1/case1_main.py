@@ -12,13 +12,19 @@ from scipy.interpolate import interp1d
 import tikzplotlib
 
 sys.path.insert(0, '../source')
-from dataset import VaryGeoDataset
-from pyMesh import hcubeMesh, visualize2D, plotBC, plotMesh,setAxisLabel,\
+from source.dataset import VaryGeoDataset
+from source.pyMesh import hcubeMesh, visualize2D, plotBC, plotMesh,setAxisLabel,\
                    np2cuda,to4DTensor
-from model import USCNN,USCNNSepPhi,USCNNSep,DDBasic
-from readOF import convertOFMeshToImage,convertOFMeshToImage_StructuredMesh
+from source.model import USCNN,USCNNSepPhi,USCNNSep,DDBasic
+from source.readOF import convertOFMeshToImage,convertOFMeshToImage_StructuredMesh
 from sklearn.metrics import mean_squared_error as calMSE
 import Ofpp
+
+if torch.cuda.is_available():
+  device = torch.device("cuda")
+else:
+  device = torch.device("cpu")
+
 h=0.01
 OFBCCoord=Ofpp.parse_boundary_field('TemplateCase_simpleVessel/3200/C')
 OFLOWC=OFBCCoord[b'low'][b'value']
@@ -42,9 +48,9 @@ nEpochs=1
 lr=0.001
 Ns=1
 nu=0.01
-#model=USCNNSep(h,nx,ny,NvarInput,NvarOutput,'ortho').to('cuda')
-model=torch.load('./Result/15000.pth')
-model=model.to('cuda')
+model=USCNNSep(h,nx,ny,NvarInput,NvarOutput,'ortho').to(device)
+#model=torch.load('./Result/15000.pth')
+model=model.to(device)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(),lr=lr)
 padSingleSide=1
@@ -135,9 +141,9 @@ def train(epoch):
 		outputP=output_pad[:,2,:,:].reshape(output_pad.shape[0],1,
 			                                output_pad.shape[2],
 			                                output_pad.shape[3])
-		XR=torch.zeros([batchSize,1,ny,nx]).to('cuda')
-		YR=torch.zeros([batchSize,1,ny,nx]).to('cuda')
-		MR=torch.zeros([batchSize,1,ny,nx]).to('cuda')
+		XR=torch.zeros([batchSize,1,ny,nx]).to(device)
+		YR=torch.zeros([batchSize,1,ny,nx]).to(device)
+		MR=torch.zeros([batchSize,1,ny,nx]).to(device)
 		for j in range(batchSize):
 			outputU[j,0,-padSingleSide:,padSingleSide:-padSingleSide]=output[j,0,-1,:].reshape(1,nx-2*padSingleSide) 
 			outputU[j,0,:padSingleSide,padSingleSide:-padSingleSide]=0  

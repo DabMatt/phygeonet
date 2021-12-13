@@ -1,0 +1,50 @@
+% This file was created with tikzplotlib v0.9.16.
+\begin{tikzpicture}
+
+\definecolor{color0}{rgb}{0.12156862745098,0.466666666666667,0.705882352941177}
+\definecolor{color1}{rgb}{1,0.498039215686275,0.0549019607843137}
+\definecolor{color2}{rgb}{0.172549019607843,0.627450980392157,0.172549019607843}
+
+\begin{axis}[
+legend cell align={left},
+legend style={fill opacity=0.8, draw opacity=1, text opacity=1, draw=white!80!black},
+log basis y={10},
+tick align=outside,
+tick pos=left,
+x grid style={white!69.0196078431373!black},
+xlabel={Epoch},
+xmin=-0.055, xmax=0.055,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ylabel={Residual},
+ymin=1626.89679828378, ymax=100729.956201609,
+ymode=log,
+ytick style={color=black},
+ytick={100,1000,10000,100000,1000000,10000000},
+yticklabels={
+  \(\displaystyle {10^{2}}\),
+  \(\displaystyle {10^{3}}\),
+  \(\displaystyle {10^{4}}\),
+  \(\displaystyle {10^{5}}\),
+  \(\displaystyle {10^{6}}\),
+  \(\displaystyle {10^{7}}\)
+}
+]
+\addplot [semithick, color0, mark=*, mark size=3, mark options={solid}]
+table {%
+0 1962.48071289062
+};
+\addlegendentry{X-momentum Residual}
+\addplot [semithick, color1, mark=x, mark size=3, mark options={solid}]
+table {%
+0 83505.1484375
+};
+\addlegendentry{Y-momentum Residual}
+\addplot [semithick, color2, mark=asterisk, mark size=3, mark options={solid}]
+table {%
+0 2089.30834960938
+};
+\addlegendentry{Continuity Residual}
+\end{axis}
+
+\end{tikzpicture}

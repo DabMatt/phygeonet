@@ -1,0 +1,57 @@
+% This file was created with tikzplotlib v0.9.16.
+\begin{tikzpicture}
+
+\definecolor{color0}{rgb}{0.12156862745098,0.466666666666667,0.705882352941177}
+\definecolor{color1}{rgb}{1,0.498039215686275,0.0549019607843137}
+\definecolor{color2}{rgb}{0.172549019607843,0.627450980392157,0.172549019607843}
+
+\begin{axis}[
+legend cell align={left},
+legend style={fill opacity=0.8, draw opacity=1, text opacity=1, draw=white!80!black},
+log basis y={10},
+minor ytick={0.8,0.9,1.1,1.2,1.3},
+minor yticklabels={
+  \(\displaystyle {8\times10^{-1}}\),
+  \(\displaystyle {9\times10^{-1}}\),
+  \(\displaystyle {1.1\times10^{0}}\),
+  \(\displaystyle {1.2\times10^{0}}\),
+  \(\displaystyle {1.3\times10^{0}}\)
+},
+tick align=outside,
+tick pos=left,
+x grid style={white!69.0196078431373!black},
+xlabel={Epoch},
+xmin=-0.055, xmax=0.055,
+xtick style={color=black},
+y grid style={white!69.0196078431373!black},
+ylabel={Error},
+ymin=0.829537769246105, ymax=1.28449440068024,
+ymode=log,
+ytick style={color=black},
+ytick={0.01,0.1,1,10,100},
+yticklabels={
+  \(\displaystyle {10^{-2}}\),
+  \(\displaystyle {10^{-1}}\),
+  \(\displaystyle {10^{0}}\),
+  \(\displaystyle {10^{1}}\),
+  \(\displaystyle {10^{2}}\)
+}
+]
+\addplot [semithick, color0, mark=*, mark size=3, mark options={solid}]
+table {%
+0 1.10741990226883
+};
+\addlegendentry{$u$}
+\addplot [semithick, color1, mark=x, mark size=3, mark options={solid}]
+table {%
+0 0.846189833315163
+};
+\addlegendentry{$v$}
+\addplot [semithick, color2, mark=asterisk, mark size=3, mark options={solid}]
+table {%
+0 1.25921699575956
+};
+\addlegendentry{$p$}
+\end{axis}
+
+\end{tikzpicture}
