@@ -48,8 +48,8 @@ nEpochs=1
 lr=0.001
 Ns=1
 nu=0.01
-model=USCNNSep(h,nx,ny,NvarInput,NvarOutput,'ortho').to(device)
-#model=torch.load('./Result/15000.pth')
+#model=USCNNSep(h,nx,ny,NvarInput,NvarOutput,'ortho').to(device)
+model=torch.load('./Result/15000.pth', map_location=torch.device(device))
 model=model.to(device)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(),lr=lr)
@@ -331,7 +331,7 @@ plt.legend()
 plt.yscale('log')
 plt.savefig('convergence.pdf',bbox_inches='tight')
 tikzplotlib.save('convergence.tikz')
-
+plt.close()
 plt.figure()
 plt.plot(EU,'-o',label=r'$u$')
 plt.plot(EV,'-x',label=r'$v$')
@@ -342,6 +342,7 @@ plt.legend()
 plt.yscale('log')
 plt.savefig('error.pdf',bbox_inches='tight')
 tikzplotlib.save('error.tikz')
+plt.close()
 EU=np.asarray(EU)
 EV=np.asarray(EV)
 EP=np.asarray(EP)
@@ -355,6 +356,8 @@ np.savetxt('XRes.txt',XRes)
 np.savetxt('YRes.txt',YRes)
 np.savetxt('MRes.txt',MRes)
 np.savetxt('TimeSpent.txt',np.zeros([2,2])+TimeSpent)
+
+print('All done !')
 
 
 
