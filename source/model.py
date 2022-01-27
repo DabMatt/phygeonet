@@ -11,6 +11,9 @@ else:
   device = torch.device("cpu")
 
 class USCNN(nn.Module):
+	"""
+	This class defines the nn model being used.
+	"""
 	def __init__(self,h,nx,ny,nVarIn=1,nVarOut=1,initWay=None,k=5,s=1,p=2):
 		super(USCNN, self).__init__()
 		"""
@@ -56,7 +59,7 @@ class USCNN(nn.Module):
 								 [0.,  0.,  -1.,  0.,  0.]]]]).to(device)/12./self.deltaX
 		self.convdy=nn.Conv2d(1,1,(5,5),stride=1,padding=0,bias=None)
 		self.convdy.weight=nn.Parameter(dyFilter,requires_grad=False)
-
+		#lap is for laplacian
 		lapFilter=torch.Tensor([[[[0.,  0.,  -1.,  0.,   0.],
 								  [0.,  0.,  16.,  0.,   0.],
 								  [-1., 16., -60., 16., -1.],

@@ -17,6 +17,9 @@ from torch.utils.data import Dataset, DataLoader
 from foamFileOperation import readVectorFromFile,readScalarFromFile
 
 def convertOFMeshToImage(MeshFile,FileName,ext,mriLevel=0,plotFlag=True):
+	"""
+	This function allows to transform a mesh file into an image then saved to a .png file.
+	"""
 	title=['x','y']
 	OFVector=None
 	OFScalar=None
@@ -67,6 +70,9 @@ def convertOFMeshToImage(MeshFile,FileName,ext,mriLevel=0,plotFlag=True):
 	return OFPic #torch.from_numpy(OFPic)
 
 def convertOFMeshToImage_StructuredMesh(nx,ny,MeshFile,FileName,ext,mriLevel=0,plotFlag=True):
+	"""
+	This function allows to transform a mesh file into an image then saved to a .png file.
+	"""
 	title=['x','y']
 	OFVector=None
 	OFScalar=None
@@ -106,8 +112,8 @@ def convertOFMeshToImage_StructuredMesh(nx,ny,MeshFile,FileName,ext,mriLevel=0,p
 
 if __name__ == '__main__':
 	convertOFMeshToImage('./NS10000/0/C',
-						 './NS10000/65/U',
-						 './NS10000/65/p',
+						 ['./NS10000/65/U',
+						 './NS10000/65/p'],
 						 [0,1,0,1],0.0,False)
 
 '''

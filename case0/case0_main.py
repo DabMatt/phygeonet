@@ -54,6 +54,7 @@ MeshList.append(myMesh)
 train_set=VaryGeoDataset(MeshList)
 training_data_loader=DataLoader(dataset=train_set,batch_size=batchSize)
 
+# Projecting temperature on mesh using files, and turning it into an image
 OFPicInformative=convertOFMeshToImage_StructuredMesh(nx,ny,'TemplateCase/30/C',
 	                                           ['TemplateCase/30/T'],
 	                                            [0,1,0,1],0.0,False)
