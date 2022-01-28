@@ -2,6 +2,7 @@ import sys
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+matplotlib.use('Agg')
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -24,19 +25,24 @@ else:
   device = torch.device("cpu")
 
 h=0.01
+# Obtain coordinates from OpenFoam file
 OFBCCoord=Ofpp.parse_boundary_field('TemplateCase/30/C')
 OFLOWC=OFBCCoord[b'low'][b'value']
 OFUPC=OFBCCoord[b'up'][b'value']
 OFLEFTC=OFBCCoord[b'left'][b'value']
 OFRIGHTC=OFBCCoord[b'right'][b'value']
+
 leftX=OFLEFTC[:,0];leftY=OFLEFTC[:,1]
 lowX=OFLOWC[:,0];lowY=OFLOWC[:,1]
 rightX=OFRIGHTC[:,0];rightY=OFRIGHTC[:,1]
 upX=OFUPC[:,0];upY=OFUPC[:,1]
 ny=len(leftX);nx=len(lowX)
+# Create Mesh
 myMesh=hcubeMesh(leftX,leftY,rightX,rightY,
 	             lowX,lowY,upX,upY,h,True,True,
 	             tolMesh=1e-10,tolJoint=1)
+
+# setup model parameters
 batchSize=1
 NvarInput=2
 NvarOutput=1
@@ -44,29 +50,40 @@ nEpochs=1500
 lr=0.001
 Ns=1
 nu=0.01
+# Choose type of model
 model=USCNN(h,nx,ny,NvarInput,NvarOutput).to(device)
+# setup other model parameters (loss, optimizer, etc)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(),lr=lr)
 padSingleSide=1
 udfpad=nn.ConstantPad2d([padSingleSide,padSingleSide,padSingleSide,padSingleSide],0)
+
+# Put mesh in a dataset
 MeshList=[]
 MeshList.append(myMesh)
 train_set=VaryGeoDataset(MeshList)
 training_data_loader=DataLoader(dataset=train_set,batch_size=batchSize)
 
 # Projecting temperature on mesh using files, and turning it into an image
+# Guess : file 'C' is for Coordinates, file 'T' is for Temperature
 OFPicInformative=convertOFMeshToImage_StructuredMesh(nx,ny,'TemplateCase/30/C',
 	                                           ['TemplateCase/30/T'],
 	                                            [0,1,0,1],0.0,False)
 OFPic=convertOFMeshToImage_StructuredMesh(nx,ny,'TemplateCase/30/C',
 	                                           ['TemplateCase/30/T'],
 	                                            [0,1,0,1],0.0,False)
+# Each channel of the generated image corresponds to either a coordinate (X, Y) or a solution (V)
 OFX=OFPic[:,:,0]
 OFY=OFPic[:,:,1]
 OFV=OFPic[:,:,2]
 OFV_sb=OFV
+# OFV_sb = results with CFD (here, Finite Volume (FV) method)
+#outputV = result with PhyGeoNet/CNN
 
 def dfdx(f,dydeta,dydxi,Jinv):
+	""" This allows to compute the derivative of f on x, which is a coordinate on the physical domain and not the reference domain.
+		This method is similar to using filters on the image to approximate the derivatives.
+		eta and xi are the coordinates in the reference domain. """
 	dfdxi_internal=(-f[:,:,:,4:]+8*f[:,:,:,3:-1]-8*f[:,:,:,1:-3]+f[:,:,:,0:-4])/12/h 	
 	dfdxi_left=(-11*f[:,:,:,0:-3]+18*f[:,:,:,1:-2]-9*f[:,:,:,2:-1]+2*f[:,:,:,3:])/6/h
 	dfdxi_right=(11*f[:,:,:,3:]-18*f[:,:,:,2:-1]+9*f[:,:,:,1:-2]-2*f[:,:,:,0:-3])/6/h
@@ -79,6 +96,9 @@ def dfdx(f,dydeta,dydxi,Jinv):
 	return dfdx
 
 def dfdy(f,dxdxi,dxdeta,Jinv):
+	""" This allows to compute the derivative of f on y, which is a coordinate on the physical domain and not the reference domain.
+		This method is similar to using filters on the image to approximate the derivatives.
+		eta and xi are the coordinates in the reference domain. """
 	dfdxi_internal=(-f[:,:,:,4:]+8*f[:,:,:,3:-1]-8*f[:,:,:,1:-3]+f[:,:,:,0:-4])/12/h	
 	dfdxi_left=(-11*f[:,:,:,0:-3]+18*f[:,:,:,1:-2]-9*f[:,:,:,2:-1]+2*f[:,:,:,3:])/6/h
 	dfdxi_right=(11*f[:,:,:,3:]-18*f[:,:,:,2:-1]+9*f[:,:,:,1:-2]-2*f[:,:,:,0:-3])/6/h
@@ -104,10 +124,12 @@ def train(epoch):
 		optimizer.zero_grad()
 		output=model(coord)
 		output_pad=udfpad(output)
+		# Extract V from output and reshape it
 		outputV=output_pad[:,0,:,:].reshape(output_pad.shape[0],1,
 			                                output_pad.shape[2],
 			                                output_pad.shape[3])
 		for j in range(batchSize):
+			# Tuning the output to respect BCs and ICs
 			outputV[j,0,-padSingleSide:,padSingleSide:-padSingleSide]=0 
 			outputV[j,0,:padSingleSide,padSingleSide:-padSingleSide]=1					   		
 			outputV[j,0,padSingleSide:-padSingleSide,-padSingleSide:]=1 					    			
@@ -126,9 +148,10 @@ def train(epoch):
 		mRes+=loss_mass.item()
 		CNNVNumpy=outputV[0,0,:,:].cpu().detach().numpy()
 		eV=eV+np.sqrt(calMSE(OFV_sb,CNNVNumpy)/calMSE(OFV_sb,OFV_sb*0))
-	print('Epoch is ',epoch)
-	print("mRes Loss is", (mRes/len(training_data_loader)))
-	print("eV Loss is", (eV/len(training_data_loader)))
+	if epoch%100==0:
+		print('Epoch is ',epoch)
+		print("mRes Loss is", (mRes/len(training_data_loader)))
+		print("eV Loss is", (eV/len(training_data_loader)))
 	if epoch%5000==0 or epoch%nEpochs==0 or np.sqrt(calMSE(OFV_sb,CNNVNumpy)/calMSE(OFV_sb,OFV_sb*0))<0.1:
 		torch.save(model, str(epoch)+'.pth')
 		fig1=plt.figure()
@@ -185,3 +208,5 @@ MRes=np.asarray(MRes)
 np.savetxt('EV.txt',EV)
 np.savetxt('MRes.txt',MRes)
 np.savetxt('TimeSpent.txt',np.zeros([2,2])+TimeSpent)
+
+print("All done !")

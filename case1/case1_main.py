@@ -2,6 +2,7 @@ import sys
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+matplotlib.use('Agg')
 import torch
 import torch.nn as nn
 import torch.optim as optim
@@ -26,45 +27,60 @@ else:
   device = torch.device("cpu")
 
 h=0.01
+# Obtain coordinates from OpenFoam file
 OFBCCoord=Ofpp.parse_boundary_field('TemplateCase_simpleVessel/3200/C')
 OFLOWC=OFBCCoord[b'low'][b'value']
 OFUPC=OFBCCoord[b'up'][b'value']
 OFLEFTC=OFBCCoord[b'left'][b'value']
 OFRIGHTC=OFBCCoord[b'rifht'][b'value']
 
-leftX=OFLEFTC[:,0];leftY=OFLEFTC[:,1]
-lowX=OFLOWC[:,0];lowY=OFLOWC[:,1]
-rightX=OFRIGHTC[:,0];rightY=OFRIGHTC[:,1]
-upX=OFUPC[:,0];upY=OFUPC[:,1]
+leftX=OFLEFTC[:,0]
+leftY=OFLEFTC[:,1]
+lowX=OFLOWC[:,0]
+lowY=OFLOWC[:,1]
+rightX=OFRIGHTC[:,0]
+rightY=OFRIGHTC[:,1]
+upX=OFUPC[:,0]
+upY=OFUPC[:,1]
 ny=len(leftX);nx=len(lowX)
+# Create Mesh
 myMesh=hcubeMesh(leftX,leftY,rightX,rightY,
 	             lowX,lowY,upX,upY,h,True,True,
 	             tolMesh=1e-10,tolJoint=1e-2)
 ####
+# setup model parameters
 batchSize=1
 NvarInput=2
 NvarOutput=1
-nEpochs=1
+#nEpochs=1
+nEpochs = 15000
 lr=0.001
 Ns=1
 nu=0.01
-#model=USCNNSep(h,nx,ny,NvarInput,NvarOutput,'ortho').to(device)
-model=torch.load('./Result/15000.pth', map_location=torch.device(device))
-model=model.to(device)
+# Choose type of model
+model=USCNNSep(h,nx,ny,NvarInput,NvarOutput,'ortho').to(device)
+#model=torch.load('./Result/15000.pth', map_location=torch.device(device)).to(device)
+
+# setup other model parameters (loss, optimizer, etc)
 criterion = nn.MSELoss()
 optimizer = optim.Adam(model.parameters(),lr=lr)
 padSingleSide=1
 udfpad=nn.ConstantPad2d([padSingleSide,padSingleSide,padSingleSide,padSingleSide],0)
 ####
+# Put mesh in a dataset
 MeshList=[]
 MeshList.append(myMesh)
 train_set=VaryGeoDataset(MeshList)
 training_data_loader=DataLoader(dataset=train_set,
 	                            batch_size=batchSize)
+# Transform mesh in an image
+# guess : file C is for Coordinates, U for speed, p for pressure
 OFPic=convertOFMeshToImage_StructuredMesh(nx,ny,'TemplateCase_simpleVessel/3200/C',
 	                                           ['TemplateCase_simpleVessel/3200/U',
 	                                            'TemplateCase_simpleVessel/3200/p'],
 	                                            [0,1,0,1],0.0,False)
+
+# Each channel of the generated image corresponds to either a coordinate (X, Y) or a solution (U, V and P)
 OFX=OFPic[:,:,0]
 OFY=OFPic[:,:,1]
 OFU=OFPic[:,:,2]
@@ -76,12 +92,15 @@ OFP_sb=np.zeros(OFP.shape)
 fcnn_P=np.zeros(OFU.shape)
 fcnn_U=np.zeros(OFV.shape)
 fcnn_V=np.zeros(OFP.shape)
+# We load data from a npz file and put it in the same format as in the image
 fcnn=np.load('comparison_160000iter.npz')
 fcnn_P_=fcnn['p_NN'].reshape(OFU_sb.shape)
 fcnn_U_=fcnn['u_NN'].reshape(OFU_sb.shape)
 fcnn_V_=fcnn['v_NN'].reshape(OFU_sb.shape)
 fcnn_X=fcnn['x_coord'].reshape(OFU_sb.shape)
 fcnn_Y=fcnn['y_coord'].reshape(OFU_sb.shape)
+
+# fcnn_U/V/P = results with FCNN
 for i in range(nx):
 	for j in range(ny):
 		dist=(myMesh.x[j,i]-fcnn_X)**2+(myMesh.y[j,i]-fcnn_Y)**2
@@ -89,6 +108,8 @@ for i in range(nx):
 		fcnn_U[j,i]=fcnn_U_[idx_min]
 		fcnn_V[j,i]=fcnn_V_[idx_min]
 		fcnn_P[j,i]=fcnn_P_[idx_min]
+
+# OFU/V/P_sb = results with CFD
 for i in range(nx):
 	for j in range(ny):
 		dist=(myMesh.x[j,i]-OFX)**2+(myMesh.y[j,i]-OFY)**2
@@ -96,7 +117,13 @@ for i in range(nx):
 		OFU_sb[j,i]=OFU[idx_min]
 		OFV_sb[j,i]=OFV[idx_min]
 		OFP_sb[j,i]=OFP[idx_min]
+
+# outputU/V/P = results with PhyGeoNet
+
 def dfdx(f,dydeta,dydxi,Jinv):
+	""" This allows to compute the derivative of f on x, which is a coordinate on the physical domain and not the reference domain.
+		This method is similar to using filters on the image to approximate the derivatives.
+		eta and xi are the coordinates in the reference domain. """
 	dfdxi_internal=(-f[:,:,:,4:]+8*f[:,:,:,3:-1]-8*f[:,:,:,1:-3]+f[:,:,:,0:-4])/12/h	
 	dfdxi_left=(-11*f[:,:,:,0:-3]+18*f[:,:,:,1:-2]-9*f[:,:,:,2:-1]+2*f[:,:,:,3:])/6/h
 	dfdxi_right=(11*f[:,:,:,3:]-18*f[:,:,:,2:-1]+9*f[:,:,:,1:-2]-2*f[:,:,:,0:-3])/6/h
@@ -108,7 +135,11 @@ def dfdx(f,dydeta,dydxi,Jinv):
 	dfdeta=torch.cat((dfdeta_low[:,:,0:2,:],dfdeta_internal,dfdeta_up[:,:,-2:,:]),2)
 	dfdx=Jinv*(dfdxi*dydeta-dfdeta*dydxi)
 	return dfdx
+
 def dfdy(f,dxdxi,dxdeta,Jinv):
+	""" This allows to compute the derivative of f on y, which is a coordinate on the physical domain and not the reference domain.
+		This method is similar to using filters on the image to approximate the derivatives.
+		eta and xi are the coordinates in the reference domain. """
 	dfdxi_internal=(-f[:,:,:,4:]+8*f[:,:,:,3:-1]-8*f[:,:,:,1:-3]+f[:,:,:,0:-4])/12/h	
 	dfdxi_left=(-11*f[:,:,:,0:-3]+18*f[:,:,:,1:-2]-9*f[:,:,:,2:-1]+2*f[:,:,:,3:])/6/h
 	dfdxi_right=(11*f[:,:,:,3:]-18*f[:,:,:,2:-1]+9*f[:,:,:,1:-2]-2*f[:,:,:,0:-3])/6/h
@@ -119,6 +150,7 @@ def dfdy(f,dxdxi,dxdeta,Jinv):
 	dfdeta=torch.cat((dfdeta_low[:,:,0:2,:],dfdeta_internal,dfdeta_up[:,:,-2:,:]),2)
 	dfdy=Jinv*(dfdeta*dxdxi-dfdxi*dxdeta)
 	return dfdy
+
 def train(epoch):
 	startTime=time.time()
 	xRes=0
@@ -130,8 +162,10 @@ def train(epoch):
 	for iteration, batch in enumerate(training_data_loader):
 		[JJInv,coord,xi,eta,J,Jinv,dxdxi,dydxi,dxdeta,dydeta]=to4DTensor(batch)
 		optimizer.zero_grad()
+		# Output contains U, V, P
 		output=model(coord)
 		output_pad=udfpad(output)
+		# We extract U, V, P from output and reshape them
 		outputU=output_pad[:,0,:,:].reshape(output_pad.shape[0],1,
 			                                output_pad.shape[2],
 			                                output_pad.shape[3])
@@ -145,6 +179,7 @@ def train(epoch):
 		YR=torch.zeros([batchSize,1,ny,nx]).to(device)
 		MR=torch.zeros([batchSize,1,ny,nx]).to(device)
 		for j in range(batchSize):
+			# Tuning the output to respect the BC and IC
 			outputU[j,0,-padSingleSide:,padSingleSide:-padSingleSide]=output[j,0,-1,:].reshape(1,nx-2*padSingleSide) 
 			outputU[j,0,:padSingleSide,padSingleSide:-padSingleSide]=0  
 			outputU[j,0,padSingleSide:-padSingleSide,-padSingleSide:]=0 			
@@ -175,7 +210,7 @@ def train(epoch):
 		d2pdx2=dfdx(dpdx,dydeta,dydxi,Jinv)
 		dpdy=dfdy(outputP,dxdxi,dxdeta,Jinv)
 		d2pdy2=dfdy(dpdy,dxdxi,dxdeta,Jinv)
-		continuity=dudx+dvdy;
+		continuity=dudx+dvdy
 		momentumX=outputU*dudx+outputV*dudy
 		forceX=-dpdx+nu*(d2udx2+d2udy2)
 		Xresidual=momentumX-forceX   
@@ -185,7 +220,7 @@ def train(epoch):
 		loss=(criterion(Xresidual,Xresidual*0)+\
 		  criterion(Yresidual,Yresidual*0)+\
 		  criterion(continuity,continuity*0))
-		#loss.backward()
+		loss.backward()
 		optimizer.step()
 		loss_xm=criterion(Xresidual, Xresidual*0)
 		loss_ym=criterion(Yresidual, Yresidual*0)
@@ -201,18 +236,21 @@ def train(epoch):
 		eP=eP+np.sqrt(calMSE(OFP_sb,CNNPNumpy)/calMSE(OFP_sb,OFP_sb*0))
 		eVmag=np.sqrt(calMSE(np.sqrt(OFU_sb**2+OFV_sb**2),np.sqrt(CNNUNumpy**2+CNNVNumpy**2))/calMSE(np.sqrt(OFU_sb**2+OFV_sb**2),np.sqrt(OFU_sb**2+OFV_sb**2)*0))
 		eVmag_FCNN=np.sqrt(calMSE(np.sqrt(OFU_sb**2+OFV_sb**2),np.sqrt(fcnn_U**2+fcnn_V**2))/calMSE(np.sqrt(OFU_sb**2+OFV_sb**2),np.sqrt(OFU_sb**2+OFV_sb**2)*0))
-		print('VelMagError_CNN=',eVmag)
-		print('VelMagError_FCNN=',eVmag_FCNN)
-		print('P_err_CNN=',np.sqrt(calMSE(OFP_sb,CNNPNumpy)/calMSE(OFP_sb,OFP_sb*0)))
-		print('P_err_FCNN=',np.sqrt(calMSE(OFP_sb,fcnn_P)/calMSE(OFP_sb,OFP_sb*0)))
-	print('Epoch is ',epoch)
-	print("xRes Loss is", (xRes/len(training_data_loader)))
-	print("yRes Loss is", (yRes/len(training_data_loader)))
-	print("mRes Loss is", (mRes/len(training_data_loader)))
-	print("eU Loss is", (eU/len(training_data_loader)))
-	print("eV Loss is", (eV/len(training_data_loader)))
-	print("eP Loss is", (eP/len(training_data_loader)))
+	if epoch%100 == 0:
+		print('Epoch is ',epoch)
+		# printing some quantities
+		print("xRes Loss is", (xRes / len(training_data_loader)))
+		print("yRes Loss is", (yRes / len(training_data_loader)))
+		print("mRes Loss is", (mRes / len(training_data_loader)))
+		print("eU Loss is", (eU / len(training_data_loader)))
+		print("eV Loss is", (eV / len(training_data_loader)))
+		print("eP Loss is", (eP / len(training_data_loader)))
+		print('VelMagError_CNN=', eVmag)
+		print('VelMagError_FCNN=', eVmag_FCNN)
+		print('P_err_CNN=', np.sqrt(calMSE(OFP_sb, CNNPNumpy) / calMSE(OFP_sb, OFP_sb * 0)))
+		print('P_err_FCNN=', np.sqrt(calMSE(OFP_sb, fcnn_P) / calMSE(OFP_sb, OFP_sb * 0)))
 	if epoch%5000==0 or epoch%nEpochs==0:
+		# Saving the model and plotting the results
 		torch.save(model, str(epoch)+'.pth')
 		fig0=plt.figure()
 		ax=plt.subplot(2,3,1)
@@ -312,6 +350,7 @@ EU=[];EV=[];EP=[]
 TotalstartTime=time.time()
 
 for epoch in range(1,nEpochs+1):
+	# Training and saving some quantities sowe can later plot or save them
 	xres,yres,mres,eu,ev,ep=train(epoch)
 	XRes.append(xres)
 	YRes.append(yres)
@@ -321,6 +360,7 @@ for epoch in range(1,nEpochs+1):
 	EP.append(ep)
 TimeSpent=time.time()-TotalstartTime
 
+# Plotting results again, and saving files
 plt.figure()
 plt.plot(XRes,'-o',label='X-momentum Residual')
 plt.plot(YRes,'-x',label='Y-momentum Residual')

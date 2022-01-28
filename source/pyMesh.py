@@ -45,11 +45,14 @@ def to4DTensor(myList):
 	return MyList
 
 def checkGeo(leftX,leftY,rightX,rightY,lowX,lowY,upX,upY,tolJoint):
+	""" Checks if the geometry defined by the parameters is coherent"""
 	print(arrow+'Check bc nodes!')
+	# Here we look if the boundaries are 1d vectors
 	assert len(leftX.shape)==len(leftY.shape)==len(rightX.shape)==\
 	       len(rightY.shape)==len(lowX.shape)==len(lowY.shape)==\
 	       len(upX.shape)==len(upY.shape)==1,\
 	       'all left(right)X(Y) must be 1d vector!'
+	# Here we check if the geometry is closed (i.e. if all sides are joint)
 	assert np.abs(leftX[0]-lowX[0])<tolJoint,errMessageJoint
 	assert np.abs(leftX[-1]-upX[0])<tolJoint,errMessageJoint
 	assert np.abs(rightX[0]-lowX[-1])<tolJoint,errMessageJoint
@@ -58,12 +61,15 @@ def checkGeo(leftX,leftY,rightX,rightY,lowX,lowY,upX,upY,tolJoint):
 	assert np.abs(leftY[-1]-upY[0])<tolJoint,errMessageJoint
 	assert np.abs(rightY[0]-lowY[-1])<tolJoint,errMessageJoint
 	assert np.abs(rightY[-1]-upY[-1])<tolJoint,errMessageJoint
+	# And here we check if the parallel sides have the same number of nodes
 	assert leftX.shape==leftY.shape==rightX.shape==rightY.shape,\
 	       errMessageParallel
 	assert upX.shape==upY.shape==lowX.shape==lowY.shape,\
 	       errMessageParallel
 	print(arrow+'BC nodes pass!')
+
 def plotBC(ax,x,y):
+	""" Plots each boundary in its own color"""
 	ax.plot(x[:,0],y[:,0],'-o',color=cleft)    # left BC
 	ax.plot(x[:,-1],y[:,-1],'-o',color=cright) # right BC
 	ax.plot(x[0,:],y[0,:],'-o',color=clow)    	# low BC
@@ -71,13 +77,16 @@ def plotBC(ax,x,y):
 	return ax
 
 def plotMesh(ax,x,y,width=0.05):
+	""" Plots the mes """
 	[ny,nx]=x.shape
 	for j in range(0,nx):
 		ax.plot(x[:,j],y[:,j],color=cinternal,linewidth=width)
 	for i in range(0,ny):
 		ax.plot(x[i,:],y[i,:],color=cinternal,linewidth=width)
 	return ax
+
 def setAxisLabel(ax,type):
+	""" Set the labels of the axis"""
 	if type=='p':
 		ax.set_xlabel(r'$x$')
 		ax.set_ylabel(r'$y$')
@@ -88,7 +97,9 @@ def setAxisLabel(ax,type):
 		raise ValueError('The axis type only can be reference or physical')
 
 def ellipticMap(x,y,h,tol):
+	""" Related to the change of coordinates"""
 	eps=2.2e-16
+	# We test if the shapes of x and y match
 	assert x.shape==y.shape,errMessageXYShape
 	[ny,nx]=x.shape
 	ite=1
@@ -113,10 +124,10 @@ def ellipticMap(x,y,h,tol):
 		C=((x[2:,1:-1]-x[0:-2,1:-1])/2/h)**2+\
 		  ((y[2:,1:-1]-y[0:-2,1:-1])/2/h)**2+eps
 		if err<tol:
-			print('The mesh generation reaches covergence!')
+			print('The mesh generation reaches convergence!')
 			break; pass
 		if ite>50000:
-			print('The mesh generation not reaches covergence '+\
+			print('The mesh generation not reaches convergence '+\
 				  'within 50000 iterations! The current resdiual is ')
 			print(err)
 			break; pass
@@ -139,6 +150,7 @@ def gen_e2vcg(x):
 
 
 def visualize2D(ax,x,y,u,colorbarPosition='vertical',colorlimit=None):
+	""" Visualisation function """
 	xdg0=np.vstack([x.flatten(order='C'),y.flatten(order='C')])
 	udg0=u.flatten(order='C')
 	idx=np.asarray([0,1,3,2])
@@ -171,6 +183,7 @@ def visualize2D(ax,x,y,u,colorbarPosition='vertical',colorlimit=None):
 
 class hcubeMesh(object):
 	"""docstring for hcubeMesh"""
+	""" plotting meshes for physics domain and reference domain """
 	def __init__(self,leftX,leftY,rightX,rightY,lowX,lowY,upX,upY,
 		         h,plotFlag=False,saveFlag=False,saveDir='./mesh.pdf',tolMesh=1e-8,tolJoint=1e-6):
 		self.h=h

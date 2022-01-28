@@ -1,6 +1,10 @@
 from torch.utils.data import Dataset, DataLoader
 import pdb
 import numpy as np
+
+# One dataset can contain different meshes
+# Those classes help get meshes and meshes parameters from dataset
+
 class VaryGeoDataset(Dataset):
 	"""docstring for hcubeMeshDataset"""
 	def __init__(self,MeshList):
@@ -8,6 +12,7 @@ class VaryGeoDataset(Dataset):
 	def __len__(self):
 		return len(self.MeshList)
 	def __getitem__(self,idx):
+		""" Obtain mesh and mesh parameters. """
 		mesh=self.MeshList[idx]
 		x=mesh.x
 		y=mesh.y
@@ -38,6 +43,7 @@ class FixGeoDataset(Dataset):
 	def __len__(self):
 		return len(self.ParaList)
 	def __getitem__(self,idx):
+		""" Obtain mesh and mesh parameters. """
 		mesh=self.mesh
 		x=mesh.x
 		y=mesh.y
@@ -67,6 +73,7 @@ class VaryGeoDataset_PairedSolution(Dataset):
 	def __len__(self):
 		return len(self.MeshList)
 	def __getitem__(self,idx):
+		""" Obtain mesh and mesh parameters. """
 		mesh=self.MeshList[idx]
 		x=mesh.x
 		y=mesh.y
